@@ -1,14 +1,50 @@
+import { Link } from "react-router-dom"
+import { CATEGORY_LABELS, CATEGORYS_LIST } from "../categories"
 import { formatMoney } from "../format"
+import { usePaymentsStore } from "../store"
+import { TCategory } from "../types"
+
+interface Row {
+    category: TCategory
+    count: number
+    paidCount: number
+    total: number
+    due: number
+}
 
 export default function CategoriesPage() {
-    const rows: any[] = []
+
+    const items = usePaymentsStore((state) => state.items)
+
+    const rows: Row[] = CATEGORYS_LIST.map(key => {
+        const categoryItems = items.filter(el => el.category === key)
+        return {
+            category: key,
+            count: categoryItems.length,
+            paidCount: categoryItems.filter((el) => el.paid).length,
+            total: categoryItems.reduce((acc, v) => acc + v.amount, 0),
+            due: categoryItems.filter((el) => !el.paid)
+            .reduce((acc, v) => acc + v.amount, 0)
+        }
+    })
+    .filter(r => r.count > 0)
+    .sort((a, b) => b.total - a.total)
+
+
+    if (rows.length === 0) {
+        return (
+            <p className="empty">
+                Данных пока нет. <Link to="/">Добавить подписку</Link>
+            </p>
+        )
+    }
 
     return (
         <ul className="list">
             {rows.map((r) => (
                 <li key={r.category} className="cat">
                     <div className={`cat__head ${r.category}`}>
-                        <span>%НАЗВАНИЕ_КАТЕГОРИИ%</span>
+                        <span>{CATEGORY_LABELS[r.category]}</span>
                         <span>{r.count} шт.</span>
                     </div>
                     <div className="cat__body">
